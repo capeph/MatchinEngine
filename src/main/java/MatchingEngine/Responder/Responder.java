@@ -41,7 +41,8 @@ public class Responder extends Thread {
                     switch (msg.getType()) {
                         case ORDER_ACK: sb.append("ACK "); break;
                         case ORDER_INFO: sb.append("INFO "); break;
-                        case TRADE_REPORT: sb.append("TRADE "); break;
+                        case TRADE_REPORT: sb.append("TRADE_REPORT "); break;
+                        case TRADE: sb.append("TRADE "); break;
                         case CANCEL: sb.append("CANCEL "); break;
                         case BOOK: sb.append("BOOK "); break;
                         case ERROR: sb.append("ERROR "); break;

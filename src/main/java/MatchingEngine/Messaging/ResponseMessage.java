@@ -6,7 +6,7 @@ import MatchingEngine.OrderBook.Order;
 public class ResponseMessage implements Copyable<ResponseMessage> {
 
 
-    public enum Type {EMPTY, ORDER_ACK, TRADE_REPORT, KILL, CANCEL, ORDER_INFO, BOOK, ERROR};
+    public enum Type {EMPTY, ORDER_ACK, TRADE, KILL, CANCEL, ORDER_INFO, BOOK, TRADE_REPORT, ERROR};
 
     protected Type type = Type.EMPTY;
     protected long owner = 0;
@@ -35,8 +35,8 @@ public class ResponseMessage implements Copyable<ResponseMessage> {
         contents = other.contents;
     }
 
-    public ResponseMessage buildTradeReport(Long orderId, long quantity, long price, long owner) {
-        type = Type.TRADE_REPORT;
+    public ResponseMessage buildTrade(Long orderId, long quantity, long price, long owner) {
+        type = Type.TRADE;
         this.owner = owner;
         StringBuilder sb = new StringBuilder();
         sb.append(orderId);
@@ -79,7 +79,12 @@ public class ResponseMessage implements Copyable<ResponseMessage> {
         return this;
     }
 
-
+    public ResponseMessage buildTradeReport(String report, long ownerId) {
+        type = Type.TRADE_REPORT;
+        owner = ownerId;
+        contents = report;
+        return this;
+    }
 
     public ResponseMessage buildCancel(long orderId, long quantity, long ownerId) {
         type = Type.CANCEL;

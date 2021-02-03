@@ -18,6 +18,18 @@ public class OrderInfo extends Order {
             this.price = price;
             this.oppositeOrder = oppositeOrder;
         }
+
+        public long getQuantity() {
+            return quantity;
+        }
+
+        public long getPrice() {
+            return price;
+        }
+
+        public long getOppositeOrder() {
+            return oppositeOrder;
+        }
     }
 
     private List<Trade> trades = new ArrayList<Trade>();
@@ -28,6 +40,10 @@ public class OrderInfo extends Order {
 
     void addTrade(long quantity, long price, long oppositeOrder) {
         trades.add(new Trade(quantity, price, oppositeOrder));
+    }
+
+    public List<Trade> getTrades() {
+        return trades;
     }
 
 }

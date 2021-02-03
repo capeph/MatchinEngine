@@ -2,7 +2,6 @@ package MatchingEngine.Manager;
 
 import MatchingEngine.Logger;
 import MatchingEngine.Messaging.*;
-import MatchingEngine.OrderBook.Depth;
 import MatchingEngine.OrderBook.Side;
 
 import java.util.HashMap;
@@ -48,6 +47,9 @@ public class Manager extends Thread {
                 case INFO:
                     processInfo(message);
                     break;
+                case TRADE_REPORT:
+                    processTradeReport(message);
+                    break;
                 case LEVEL:
                     processLevel(message);
                     break;
@@ -77,13 +79,23 @@ public class Manager extends Thread {
         order.addTrade(quantity, price, msg.getOpposite());
         opposite.addTrade(quantity, price, msg.getId());
         logger.info("traded " + quantity + "@" + price + " between " + order.getId() + " and " + opposite.getId());
-        toResponder.putCopy(response.buildTradeReport(order.getId(), quantity, price, order.getOwnerid()));
-        toResponder.putCopy(response.buildTradeReport(opposite.getId(), quantity, price, opposite.getOwnerid()));
+        toResponder.putCopy(response.buildTrade(order.getId(), quantity, price, order.getOwnerid()));
+        toResponder.putCopy(response.buildTrade(opposite.getId(), quantity, price, opposite.getOwnerid()));
     }
 
     private void processInfo(OrderMessage msg) {
         OrderInfo order = orderInfo.get(msg.getId());
         toResponder.putCopy(response.buildOrderInfo(order, msg.getOwner()));
+    }
+
+    private void processTradeReport(OrderMessage msg) {
+        OrderInfo order = orderInfo.get(msg.getId());
+        StringBuilder sb = new StringBuilder();
+        for(OrderInfo.Trade trade: order.getTrades()) {
+            OrderInfo opposite = orderInfo.get(trade.getOppositeOrder());
+            sb.append(opposite.getOwnerid()).append(":").append(trade.getQuantity()).append("@").append(trade.getPrice());
+        }
+        toResponder.putCopy(response.buildTradeReport(sb.toString(), msg.getOwner()));
     }
 
     private void processBook(OrderMessage msg) {

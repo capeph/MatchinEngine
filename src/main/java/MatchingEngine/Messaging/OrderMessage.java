@@ -4,7 +4,7 @@ import MatchingEngine.OrderBook.Side;
 
 public class OrderMessage implements Copyable<OrderMessage> {
 
-    public enum Type {EMPTY, NEW_ORDER, CANCEL, TRADE, INFO, LEVEL, BOOK, KILL};
+    public enum Type {EMPTY, NEW_ORDER, CANCEL, TRADE, INFO, LEVEL, BOOK, TRADE_REPORT, KILL};
 
     protected Type type = Type.EMPTY;
     protected long[] fields = new long[5];
@@ -66,6 +66,15 @@ public class OrderMessage implements Copyable<OrderMessage> {
         fields[OWNER] = clientId;
         return this;
     }
+
+
+    public OrderMessage buildTradeReport(long clientId, long orderId) {
+        type = type.TRADE_REPORT;
+        fields[ID] = orderId;
+        fields[OWNER] = clientId;
+        return this;
+    }
+
 
     public OrderMessage buildOrderBook(long clientId) {
         type = Type.BOOK;

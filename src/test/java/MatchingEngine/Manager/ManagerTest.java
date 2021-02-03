@@ -4,7 +4,6 @@ import MatchingEngine.Messaging.MailBox;
 import MatchingEngine.Messaging.MailBoxImpl;
 import MatchingEngine.Messaging.OrderMessage;
 import MatchingEngine.Messaging.ResponseMessage;
-import MatchingEngine.OrderBook.Book;
 import MatchingEngine.OrderBook.Side;
 import org.junit.jupiter.api.Test;
 
@@ -52,11 +51,11 @@ class ManagerTest {
         assertEquals(79, out.getOwner());
         assertEquals("2:S50@12", out.getContents());
         out = rsp.get();
-        assertEquals(ResponseMessage.Type.TRADE_REPORT, out.getType());
+        assertEquals(ResponseMessage.Type.TRADE, out.getType());
         assertEquals(79, out.getOwner());
         assertEquals("2:50@12", out.getContents());
         out = rsp.get();
-        assertEquals(ResponseMessage.Type.TRADE_REPORT, out.getType());
+        assertEquals(ResponseMessage.Type.TRADE, out.getType());
         assertEquals(42, out.getOwner());
         assertEquals("1:50@12", out.getContents());
 

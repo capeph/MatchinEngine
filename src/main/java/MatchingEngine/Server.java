@@ -72,6 +72,8 @@ public class Server {
                         case 'g':
                             manager.getMailBox().putCopy(template.buildOrderInfo(clientId, Long.parseLong(parts[1])));
                             break;
+                        case 't':
+                            manager.getMailBox().putCopy(template.buildTradeReport(clientId, Long.parseLong(parts[1])));
                         case 'o':
                             manager.getMailBox().putCopy(template.buildOrderBook(clientId));
                             break;
