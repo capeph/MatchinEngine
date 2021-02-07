@@ -28,7 +28,7 @@ public class Book extends Thread {
     private void accept(OrderMessage msg) {
         toManager.sendNewOrder(msg.getId(), msg.getOwner(), msg.getSide(), msg.getQuantity(), msg.getPrice());
         Order order = decode(msg);
-        logger.info("Received order " + order.getSide() + order.getQuantity() + "@" + order.getPrice());
+        logger.info("Received order " + order.getId() + ":" + order.getSide() + order.getQuantity() + "@" + order.getPrice());
         switch (order.getSide()) {
             case BUY:
                 askSide.match(order, toManager);

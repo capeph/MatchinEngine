@@ -3,9 +3,9 @@ package MatchingEngine.Trading;
 public class Order {
 
     private final long id;
-    private long quantity;  // multiplier of min trade size
+    private long quantity;
     private Side side;
-    private long price;   // price per whole coin
+    private long price;
     private final long ownerid;
 
     public Order(long id, Side side, long quantity, long price, long ownerid) {
@@ -16,8 +16,9 @@ public class Order {
         this.ownerid = ownerid;
     }
 
+    // can the current order be traded against the macthPrice?
     public boolean acceptsPrice(long matchPrice) { // market orders accept all prices!
-        return price == 0 || side.getComparator().compare(price, matchPrice) <= 0;
+        return price == 0 || side.getComparator().compare(matchPrice, price) <= 0;
     }
 
     public long getId() {
