@@ -1,11 +1,11 @@
 package MatchingEngine;
 
 import MatchingEngine.Manager.Manager;
-import MatchingEngine.Messaging.OrderMessage;
-import MatchingEngine.Messaging.ResponseMessage;
+import MatchingEngine.OrderBook.OrderMessage;
+import MatchingEngine.Responder.ResponseMessage;
 import MatchingEngine.OrderBook.Book;
 import MatchingEngine.Responder.Responder;
-import MatchingEngine.OrderBook.Side;
+import MatchingEngine.Trading.Side;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -54,34 +54,35 @@ public class Server {
                         case 'b' :  // b 100 @ 23
                             // TODO - add validation of format
                             if (validate(parts)) {
-                                book.getMailBox().putCopy(template.buildNewOrder(OrderIDs.getAndIncrement(),
-                                        clientId, Side.BUY, Long.parseLong(parts[1]), Long.parseLong(parts[3])));
+                                book.getMailBox().sendNewOrder(OrderIDs.getAndIncrement(),
+                                        clientId, Side.BUY, Long.parseLong(parts[1]), Long.parseLong(parts[3]));
                             }
                             else {
-                                responder.getMailBox().putCopy(response.buildError(clientId, "Bad Input " + input));
+                                responder.getMailBox().sendError(clientId, "Bad Input " + input);
                             }
                             break;
                         case 's':
                             if (validate(parts)) {
-                                book.getMailBox().putCopy(template.buildNewOrder(OrderIDs.getAndIncrement(),
-                                        clientId, Side.SELL, Long.parseLong(parts[1]), Long.parseLong(parts[3])));
+                                book.getMailBox().sendNewOrder(OrderIDs.getAndIncrement(),
+                                        clientId, Side.SELL, Long.parseLong(parts[1]), Long.parseLong(parts[3]));
                             } else {
-                                responder.getMailBox().putCopy(response.buildError(clientId, "Bad Input " + input));
+                                responder.getMailBox().sendError(clientId, "Bad Input " + input);
                             }
                             break;
                         case 'g':
-                            manager.getMailBox().putCopy(template.buildOrderInfo(clientId, Long.parseLong(parts[1])));
+                            manager.getMailBox().sendOrderInfo(clientId, Long.parseLong(parts[1]));
                             break;
                         case 't':
-                            manager.getMailBox().putCopy(template.buildTradeReport(clientId, Long.parseLong(parts[1])));
+                            manager.getMailBox().sendTradeReport(clientId, Long.parseLong(parts[1]));
+                            break;
                         case 'o':
-                            manager.getMailBox().putCopy(template.buildOrderBook(clientId));
+                            manager.getMailBox().sendOrderBook(clientId);
                             break;
                         case 'k':
-                            book.getMailBox().putCopy(template.buildKill());
+                            book.getMailBox().sendKill();
                             return;
                         default:
-                            responder.getMailBox().putCopy(response.buildError(clientId, "Bad Input"));
+                            responder.getMailBox().sendError(clientId, "Bad Input");
                     }
                 } catch (IOException e) {
                     e.printStackTrace();

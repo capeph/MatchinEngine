@@ -1,4 +1,4 @@
-package MatchingEngine.OrderBook;
+package MatchingEngine.Trading;
 
 public class Order {
 

@@ -2,8 +2,10 @@ package MatchingEngine.OrderBook;
 
 
 import MatchingEngine.Logger;
+import MatchingEngine.Manager.ManagerMailBox;
 import MatchingEngine.Messaging.MailBox;
-import MatchingEngine.Messaging.OrderMessage;
+import MatchingEngine.Trading.Order;
+import MatchingEngine.Trading.Side;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -32,13 +34,13 @@ public class Depth {
         return level;
     }
 
-    void add(Order order, MailBox<OrderMessage> toManager) {
+    void add(Order order, ManagerMailBox toManager) {
         PriceLevel level = getPriceLevel(order.getPrice());
         level.add(order, toManager);
         logger.info("stored order " + order.getId() + " at level " + order.getPrice());
     }
 
-    void match(Order order, MailBox<OrderMessage> manager) {
+    void match(Order order, ManagerMailBox toManager) {
         Iterator<Map.Entry<Long, PriceLevel>> it = depthMap.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<Long, PriceLevel> entry = it.next();
@@ -47,8 +49,8 @@ public class Depth {
             if (!order.acceptsPrice(price)) {
                 break;
             }
-            long volume = level.match(order, manager);
-            manager.putCopy(template.buildLevelUpdate(side, price, volume));
+            long volume = level.match(order, toManager);
+            toManager.sendLevelUpdate(side, price, volume);
             if (volume == 0) {
                 it.remove();
             }

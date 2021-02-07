@@ -3,8 +3,6 @@ package MatchingEngine.Responder;
 
 import MatchingEngine.Logger;
 import MatchingEngine.Messaging.MailBox;
-import MatchingEngine.Messaging.MailBoxImpl;
-import MatchingEngine.Messaging.ResponseMessage;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -16,7 +14,7 @@ public class Responder extends Thread {
 
     private Logger logger = new Logger("Responder");
     private Map<Long, DataOutputStream> outputStreams = new ConcurrentHashMap<>();
-    public MailBox<ResponseMessage> mailBox = new MailBoxImpl<>(10000, ResponseMessage::new);
+    public ResponderMailBox mailBox = new ResponderMailBox(10000);
 
     public void addClient(long clientId, OutputStream output) {
         DataOutputStream dataOutputStream = new DataOutputStream(output);
@@ -63,7 +61,7 @@ public class Responder extends Thread {
         }
     }
 
-    public MailBox<ResponseMessage> getMailBox() {
+    public ResponderMailBox getMailBox() {
         return mailBox;
     }
 }

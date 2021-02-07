@@ -1,7 +1,8 @@
 package MatchingEngine.OrderBook;
 
+import MatchingEngine.Manager.ManagerMailBox;
 import MatchingEngine.Messaging.MailBox;
-import MatchingEngine.Messaging.OrderMessage;
+import MatchingEngine.Trading.Order;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -11,12 +12,11 @@ public class PriceLevel {
 
     private final Map<Long, Order> orderQueue = new LinkedHashMap<>();
     private long volume = 0;
-    private OrderMessage template = new OrderMessage();
 
-    void add(Order order, MailBox<OrderMessage> toManager) {
+    void add(Order order, ManagerMailBox toManager) {
         orderQueue.put(order.getId(), order);
         volume += order.getQuantity();
-        toManager.putCopy(template.buildLevelUpdate(order.getSide(), order.getPrice(), volume));
+        toManager.sendLevelUpdate(order.getSide(), order.getPrice(), volume);
     }
 
     Order remove(long id) {
@@ -43,21 +43,21 @@ public class PriceLevel {
     }
 
 
-    public long match(Order order, MailBox manager) {
+    public long match(Order order, ManagerMailBox toManager) {
         Iterator<Map.Entry<Long, Order>> it = orderQueue.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<Long, Order> entry = it.next();
             long id = entry.getKey();
             Order opposite = entry.getValue();
             if (opposite.getQuantity() > order.getQuantity()) { // partial trade
-                manager.putCopy(template.buildTrade(order.getId(), opposite.getId(),
-                        order.getQuantity(), opposite.getPrice()));
+                toManager.sendTrade(order.getId(), opposite.getId(),
+                        order.getQuantity(), opposite.getPrice());
                 opposite.setQuantity(opposite.getQuantity() - order.getQuantity());
                 volume -= order.getQuantity();
                 order.setQuantity(0);
             } else {
-                manager.putCopy(template.buildTrade(order.getId(), opposite.getId(),
-                        opposite.getQuantity(), opposite.getPrice()));
+                toManager.sendTrade(order.getId(), opposite.getId(),
+                        opposite.getQuantity(), opposite.getPrice());
                 it.remove();
                 volume -= opposite.getQuantity();
                 order.setQuantity(order.getQuantity() - opposite.getQuantity());

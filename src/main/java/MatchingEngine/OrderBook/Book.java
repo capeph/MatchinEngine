@@ -1,9 +1,10 @@
 package MatchingEngine.OrderBook;
 
 import MatchingEngine.Logger;
+import MatchingEngine.Manager.ManagerMailBox;
 import MatchingEngine.Messaging.MailBox;
-import MatchingEngine.Messaging.MailBoxImpl;
-import MatchingEngine.Messaging.OrderMessage;
+import MatchingEngine.Trading.Order;
+import MatchingEngine.Trading.Side;
 
 public class Book extends Thread {
     //TODO: set manager (from server?
@@ -13,11 +14,10 @@ public class Book extends Thread {
     private Depth bidSide = new Depth(Side.BUY);
     private Depth askSide = new Depth(Side.SELL);
 
-    private MailBox<OrderMessage> mailBox = new MailBoxImpl<>(100000, OrderMessage::getEmpty);
-    private MailBox<OrderMessage> toManager;
-    private OrderMessage template = new OrderMessage();
+    private BookMailBox mailBox = new BookMailBox(100000);
+    private ManagerMailBox toManager;
 
-    public void connect(MailBox<OrderMessage> toManager) {
+    public void connect(ManagerMailBox toManager) {
         this.toManager = toManager;
     }
 
@@ -25,9 +25,9 @@ public class Book extends Thread {
         return new Order(msg.getId(), msg.getSide(),msg.getQuantity(),msg.getPrice(),msg.getOwner());
     }
 
-    private void accept(OrderMessage orderMsg) {
-        toManager.putCopy(orderMsg);
-        Order order = decode(orderMsg);
+    private void accept(OrderMessage msg) {
+        toManager.sendNewOrder(msg.getId(), msg.getOwner(), msg.getSide(), msg.getQuantity(), msg.getPrice());
+        Order order = decode(msg);
         logger.info("Received order " + order.getSide() + order.getQuantity() + "@" + order.getPrice());
         switch (order.getSide()) {
             case BUY:
@@ -41,10 +41,10 @@ public class Book extends Thread {
         }
     }
 
-    private void storeOrCancel(Order order, Depth bookSide, MailBox<OrderMessage> toManager) {
+    private void storeOrCancel(Order order, Depth bookSide, ManagerMailBox toManager) {
         if (order.getQuantity() > 0) {
             if (order.getPrice() == 0) { // cancel remaining part of market order
-                toManager.putCopy(template.buildCancel(order.getId(), order.getQuantity()));
+                toManager.sendCancel(order.getId(), order.getQuantity());
             } else {
                 bookSide.add(order, toManager);
             }
@@ -63,7 +63,7 @@ public class Book extends Thread {
                     break;
                 case KILL:
                     processMessages = false;
-                    toManager.putCopy(message);  //propagate the shutdown
+                    toManager.sendKill();  //propagate the shutdown
                     break;
                 default: throw new IllegalArgumentException("Bad message type");
             }
@@ -71,7 +71,7 @@ public class Book extends Thread {
     }
 
 
-    public MailBox<OrderMessage> getMailBox() {
+    public BookMailBox getMailBox() {
         return mailBox;
     }
 }

@@ -2,7 +2,9 @@ package MatchingEngine.Manager;
 
 import MatchingEngine.Logger;
 import MatchingEngine.Messaging.*;
-import MatchingEngine.OrderBook.Side;
+import MatchingEngine.Responder.ResponderMailBox;
+import MatchingEngine.Trading.Side;
+import MatchingEngine.Responder.ResponseMessage;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,18 +16,18 @@ public class Manager extends Thread {
     private Logger logger = new Logger("Manager");
 
     private Map<Long, OrderInfo> orderInfo = new HashMap<>();
-    private final MailBox<OrderMessage> mailBox = new MailBoxImpl<>(10000, OrderMessage::getEmpty);
-    private MailBox<ResponseMessage> toResponder;
+    private final ManagerMailBox mailBox = new ManagerMailBox(10000);
+    private ResponderMailBox toResponder;
     private ResponseMessage response = new ResponseMessage();
 
     private SortedMap<Long, Long> bidSizes = new TreeMap<>(Side.BUY.getComparator());
     private SortedMap<Long, Long> askSizes = new TreeMap<>(Side.SELL.getComparator());
 
-    public MailBox<OrderMessage> getMailBox() {
+    public ManagerMailBox getMailBox() {
         return mailBox;
     }
 
-    public void connect(MailBox<ResponseMessage> toResponder) {
+    public void connect(ResponderMailBox toResponder) {
         this.toResponder = toResponder;
     }
 
@@ -33,7 +35,7 @@ public class Manager extends Thread {
         logger.info("starting Manager");
         boolean processMessages = true;
         while(processMessages) {
-            OrderMessage message = mailBox.get();
+            ManagerMessage message = mailBox.get();
             switch (message.getType()) {
                 case NEW_ORDER:
                     storeNew(message);
@@ -56,7 +58,7 @@ public class Manager extends Thread {
                 case BOOK:
                     processBook(message);
                 case KILL:
-                    toResponder.putCopy(response.buildKill());
+                    toResponder.sendKill();
                     processMessages = false;
                     break;
                 default: throw new IllegalArgumentException("Bad message type");
@@ -64,14 +66,14 @@ public class Manager extends Thread {
         }
     }
 
-    private void storeNew(OrderMessage msg) {
+    private void storeNew(ManagerMessage msg) {
         OrderInfo order = new OrderInfo(msg.getId(), msg.getSide(), msg.getQuantity(), msg.getPrice(), msg.getOwner());
         orderInfo.put(msg.getId(), order);
         logger.info("order " + order.getId() + " stored");
-        toResponder.putCopy(response.buildOrderAck(order));
+        toResponder.sendOrderAck(order);
     }
 
-    private void processTrade(OrderMessage msg) {
+    private void processTrade(ManagerMessage msg) {
         OrderInfo order = orderInfo.get(msg.getId());
         long price = msg.getPrice();
         long quantity = msg.getQuantity();
@@ -79,26 +81,26 @@ public class Manager extends Thread {
         order.addTrade(quantity, price, msg.getOpposite());
         opposite.addTrade(quantity, price, msg.getId());
         logger.info("traded " + quantity + "@" + price + " between " + order.getId() + " and " + opposite.getId());
-        toResponder.putCopy(response.buildTrade(order.getId(), quantity, price, order.getOwnerid()));
-        toResponder.putCopy(response.buildTrade(opposite.getId(), quantity, price, opposite.getOwnerid()));
+        toResponder.sendTrade(order.getId(), quantity, price, order.getOwnerid());
+        toResponder.sendTrade(opposite.getId(), quantity, price, opposite.getOwnerid());
     }
 
-    private void processInfo(OrderMessage msg) {
+    private void processInfo(ManagerMessage msg) {
         OrderInfo order = orderInfo.get(msg.getId());
-        toResponder.putCopy(response.buildOrderInfo(order, msg.getOwner()));
+        toResponder.sendOrderInfo(order, msg.getOwner());
     }
 
-    private void processTradeReport(OrderMessage msg) {
+    private void processTradeReport(ManagerMessage msg) {
         OrderInfo order = orderInfo.get(msg.getId());
         StringBuilder sb = new StringBuilder();
-        for(OrderInfo.Trade trade: order.getTrades()) {
+        for(TradeInfo trade: order.getTrades()) {
             OrderInfo opposite = orderInfo.get(trade.getOppositeOrder());
             sb.append(opposite.getOwnerid()).append(":").append(trade.getQuantity()).append("@").append(trade.getPrice());
         }
-        toResponder.putCopy(response.buildTradeReport(sb.toString(), msg.getOwner()));
+        toResponder.sendTradeReport(sb.toString(), msg.getOwner());
     }
 
-    private void processBook(OrderMessage msg) {
+    private void processBook(ManagerMessage msg) {
         StringBuilder sb = new StringBuilder();
         sb.append("\r\nB:");
         for (Map.Entry<Long, Long>entry : bidSizes.entrySet()) {
@@ -108,10 +110,10 @@ public class Manager extends Thread {
         for (Map.Entry<Long, Long>entry : askSizes.entrySet()) {
             sb.append(" ").append(entry.getKey()).append(":").append(entry.getValue());
         }
-        toResponder.putCopy(response.buildBook(msg.getOwner(), sb.toString()));
+        toResponder.sendBook(msg.getOwner(), sb.toString());
     }
 
-    private void processLevel(OrderMessage msg) {
+    private void processLevel(ManagerMessage msg) {
         Side side = msg.getSide();
         long price = msg.getPrice();
         long size = msg.getQuantity();
@@ -123,13 +125,13 @@ public class Manager extends Thread {
         }
     }
 
-    private void processCancel(OrderMessage msg) {
+    private void processCancel(ManagerMessage msg) {
         OrderInfo order = orderInfo.get(msg.getId());
         long cancelled = msg.getQuantity();
         order.setQuantity(order.getQuantity() - cancelled);
         orderInfo.put(msg.getId(), order);
         logger.info("cancelled " + cancelled + " from " + order.getId() + " " + order.getQuantity() + " remaining");
-        toResponder.putCopy(response.buildCancel(order.getId(), order.getQuantity(), order.getOwnerid()));
+        toResponder.sendCancel(order.getId(), order.getQuantity(), order.getOwnerid());
     }
 
 
